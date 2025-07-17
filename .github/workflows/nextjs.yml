@@ -45,15 +45,27 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} npm run build
-      - name: 'Tar files'
-        run: tar -cvzf out.tgz ./out
+      - name: 'Zip files'
+        run: zip -r out.zip ./out
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: xtools
-          path: out.tgz
+          path: out.zip
+
+      - name: Create Git Tag
+        run: |
+          TAG_NAME="auto-release-$(date +'%Y%m%d-%H%M%S')"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: out.tgz
+          files: out.zip
+          tag_name: ${{ env.TAG_NAME }}
+          name: "Auto Release"
